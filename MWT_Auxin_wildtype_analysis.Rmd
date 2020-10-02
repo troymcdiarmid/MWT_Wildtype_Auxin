@@ -18,7 +18,7 @@ library(broom)
 
 ```{r}
 
-#This section covers the Multi-Worm Tracker analysis of the Auxin treated PD1074 and N2 WT strains. 
+#This section covers the Multi-Worm Tracker analysis of the Auxin treated PD1074 WT strain.
 
 ##Bash loop to output reversals and basic morphology from tracker plates (to be run in terminal)
 
@@ -36,9 +36,9 @@ cd ../..
 ```{r}
 ##The following code creates a dataframe with all morphology and baseline locomotion measures throughout the tracking session.
 
-##Comand to read .smorph file in 
+##Comand to read .smorph file in for 
 
-setwd("/Volumes/DRSTRANGE/Lexi/N2_PD1074_AUXIN_KNAA_0902_2020/data/")
+setwd("/Volumes/DRSTRANGE/Lexi/Auxinmicropubdata/N2_PD1074_AUXIN_KNAA_0902_2020/data")
 
 rawsmorph <- read_table2("data.smorph", col_names = c("plate_id", "width", "length", "morphwidth", "curve", "area", "midline", "pathlen", "bias", "dir", "angular", "aspect", "kink", "crab", "speed"))
 
@@ -53,10 +53,15 @@ cleanrawsmorph <- rawsmorph %>%
 cleanrawsmorph <- cleanrawsmorph %>% mutate(time = as.numeric(time)) %>% 
   mutate(time = round(time, digits = 0)) 
 
+##Selecting relevant groups
+
+cleanrawsmorph <- cleanrawsmorph %>% 
+  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
+
 ##Ordering the genotype factor for plotting
     
 cleanrawsmorph$genotype <- factor(cleanrawsmorph$genotype,
-    levels = c("N2_NGM", "N2_A25", "N2_A1", "N2_K25", "N2_K1", "PD1074_NGM", "PD1074_A25", "PD1074_A1", "PD1074_K25", "PD1074_K1"), ordered = TRUE)
+    levels = c("PD1074_NGM", "PD1074_A25", "PD1074_A1"), ordered = TRUE)
 
 ##Filtering to exclude first 10s when the tracker has yet to calculate conistent measurements for certain metrics.
 
@@ -82,7 +87,7 @@ mean_cleanrawsmorph <- mean_cleanrawsmorph %>%
   summarize_all(mean) 
 
 mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
-  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1", "N2_NGM", "N2_A25", "N2_A1"))
+  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
 
 
 ```
@@ -119,43 +124,6 @@ ggplot(mean_cleanrawsmorph_filt, aes(genotype, length, fill = genotype)) +
   theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
 ggsave("Auxin_wildtype_baseline_PD1074_length.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
 
-##Plot of N2 length
-
-mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
-
-ggplot(mean_cleanrawsmorph_filt, aes(genotype, length, fill = genotype)) +
-  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
-  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
-  dodge.width = 0.65, seed = 3), size = 0.2) +
-  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
-  scale_y_continuous(expand = c(0,0),
-                     limits = c(0,1.25), breaks = c(0,.25,.50,0.75,1.00,1.25)) +
-  theme_classic() +
-  labs(y = "Length (mm)", x = "") +
-  theme(legend.title= element_text(family="Arial Bold")) +
-  theme(legend.position = "none") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
-  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length=unit(.03, "in")) +
-  theme(axis.ticks.x = element_line(size = 0)) +
-  theme(axis.text = element_text(family="Arial", colour = "black")) +
-  theme(axis.text.x = element_text(size = 0)) +
-  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
-ggsave("Auxin_wildtype_baseline_N2_length.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
-
-##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
-
-fit <- summary(lm(length~genotype, mean_cleanrawsmorph_filt))
-
-tidy_fit <- tidy(fit)  
-
-qvals <- p.adjust(tidy_fit$p.value, "BH")
-
-tidy_fit$q.vals <- qvals
-
 ##Plot of PD1074 Width
 
 mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
@@ -183,44 +151,6 @@ ggplot(mean_cleanrawsmorph_filt, aes(genotype, width, fill = genotype)) +
   theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
 ggsave("Auxin_wildtype_baseline_PD1074_width.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
 
-#Plots of width for N2 
-
-mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
-
-ggplot(mean_cleanrawsmorph_filt, aes(genotype, width, fill = genotype)) +
-  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
-  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
-  dodge.width = 0.65, seed = 3), size = 0.3) +
-  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
-  scale_y_continuous(expand = c(0,0),
-                     limits = c(0,0.5), breaks = c(0,.25,.50)) +
-  theme_classic() +
-  labs(y = "Width (mm)", x = "") +
-  theme(legend.title= element_text(family="Arial Bold")) +
-  theme(legend.position = "none") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
-  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length=unit(.03, "in")) +
-  theme(axis.ticks.x = element_line(size = 0)) +
-  theme(axis.text = element_text(family="Arial", colour = "black")) +
-  theme(axis.text.x = element_text(size = 0)) +
-  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
-ggsave("Auxin_wildtype_baseline_N2_width.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
-
-
-##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
-
-fit <- summary(lm(width~genotype, mean_cleanrawsmorph_filt))
-
-tidy_fit <- tidy(fit)  
-
-qvals <- p.adjust(tidy_fit$p.value, "BH")
-
-tidy_fit$q.vals <- qvals
-
 ##Plot of kink for PD1074
 
 mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
@@ -247,43 +177,6 @@ ggplot(mean_cleanrawsmorph_filt, aes(genotype, kink, fill = genotype)) +
   theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
   theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
 ggsave("Auxin_wildtype_baseline_PD1074_kink.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
-
-#Plot of kink for N2 
-
-mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1")) 
-
-ggplot(mean_cleanrawsmorph_filt, aes(genotype, kink, fill = genotype)) +
-  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
-  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
-  dodge.width = 0.65, seed = 3), size = 0.3) +
-  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
-    scale_y_continuous(expand = c(0,0),
-                     limits = c(0, 75), breaks = c(0,25,50,75)) +
-  theme_classic() +
-  labs(y = "Kink (radians)", x = "") +
-  theme(legend.title= element_text(family="Arial Bold")) +
-  theme(legend.position = "none") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
-  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length=unit(.03, "in")) +
-  theme(axis.ticks.x = element_line(size = 0)) +
-  theme(axis.text = element_text(family="Arial", colour = "black")) +
-  theme(axis.text.x = element_text(size = 0)) +
-  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
-ggsave("Auxin_wildtype_baseline_N2_kink.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
-
-##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
-
-fit <- summary(lm(kink~genotype, mean_cleanrawsmorph_filt))
-
-tidy_fit <- tidy(fit)  
-
-qvals <- p.adjust(tidy_fit$p.value, "BH")
-
-tidy_fit$q.vals <- qvals
 
 
 ##Plot of speed for PD1074
@@ -313,43 +206,6 @@ ggplot(mean_cleanrawsmorph_filt, aes(genotype, speed, fill = genotype)) +
   theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
 ggsave("Auxin_wildtype_baseline_PD1074_speed.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
 
-##Plot of speed for N2
-
-mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1")) 
-
-ggplot(mean_cleanrawsmorph_filt, aes(genotype, speed, fill = genotype)) +
-  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
-  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
-  dodge.width = 0.65, seed = 3), size = 0.3) +
-  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
-    scale_y_continuous(expand = c(0,0),
-                     limits = c(0, 0.15), breaks = c(0,0.05,0.1,0.15)) +
-  theme_classic() +
-  labs(y = "Speed (mm/s)", x = "") +
-  theme(legend.title= element_text(family="Arial Bold")) +
-  theme(legend.position = "none") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
-  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length=unit(.03, "in")) +
-  theme(axis.ticks.x = element_line(size = 0)) +
-  theme(axis.text = element_text(family="Arial", colour = "black")) +
-  theme(axis.text.x = element_text(size = 0)) +
-  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
-ggsave("Auxin_wildtype_baseline_N2_speed.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
-
-##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
-
-fit <- summary(lm(speed~genotype, mean_cleanrawsmorph_filt))
-
-tidy_fit <- tidy(fit)  
-
-qvals <- p.adjust(tidy_fit$p.value, "BH")
-
-tidy_fit$q.vals <- qvals
-
 ##Plot of bias for PD1074
 
 mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
@@ -377,33 +233,50 @@ ggplot(mean_cleanrawsmorph_filt, aes(genotype, bias, fill = genotype)) +
   theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
 ggsave("Auxin_wildtype_baseline_PD1074_bias.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
 
-##Plot of bias for N2
+##Remove ordering from genotype factor before statistical analysis. 
 
-mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1")) 
+mean_cleanrawsmorph_filt$genotype <- factor(mean_cleanrawsmorph_filt$genotype,
+    levels = c("PD1074_NGM", "PD1074_A25", "PD1074_A1"), ordered = FALSE)
 
-ggplot(mean_cleanrawsmorph_filt, aes(genotype, bias, fill = genotype)) +
-  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
-  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
-  dodge.width = 0.65, seed = 3), size = 0.3) +
-  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
-    scale_y_continuous(expand = c(0,0),
-                     limits = c(-0.25, 0.75), breaks = c(-0.25,0.0,0.25,0.5,0.75)) +
-  theme_classic() +
-  labs(y = "Bias", x = "") +
-  theme(legend.title= element_text(family="Arial Bold")) +
-  theme(legend.position = "none") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
-  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length=unit(.03, "in")) +
-  theme(axis.ticks.x = element_line(size = 0)) +
-  theme(axis.text = element_text(family="Arial", colour = "black")) +
-  theme(axis.text.x = element_text(size = 0)) +
-  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
-ggsave("Auxin_wildtype_baseline_N2_bias.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
 
+fit <- summary(lm(length~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(width~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(kink~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(speed~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
 
 ##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
 
@@ -414,7 +287,6 @@ tidy_fit <- tidy(fit)
 qvals <- p.adjust(tidy_fit$p.value, "BH")
 
 tidy_fit$q.vals <- qvals
-
 
 ```
 
@@ -437,7 +309,7 @@ cd ../..
 ```{r}
 ##Read in summary of reversal data file (data.srev) 
 
-setwd("/Volumes/DRSTRANGE/Lexi/N2_PD1074_AUXIN_KNAA_0902_2020/data/")
+setwd("/Volumes/DRSTRANGE/Lexi/Auxinmicropubdata/N2_PD1074_AUXIN_KNAA_0902_2020/data")
 cleanrawsrev <- read_table2("data.srev", col_names = c("plate_id", "already_rev", "not_rev", "rev", "rev_dist", "dist_sd", "dist_sem", "dist_0_quart", "dist_1st_quart", "dist_2nd_quart", "dist_3rd_quart", "dsit_100th_percentile", "rev_dur", "dur_sd", "dur_sem", "dur_0_quart", "dur_1st_quart", "dur_2nd_quart", "dur_3rd_quart", "dur_100th_percentile"))
 cleanrawsrev <- cleanrawsrev %>% 
   separate(plate_id, into = c("garbage", "plate_id", "genotype"), sep ="/") %>%
@@ -450,10 +322,15 @@ cleanrawsrev <- cleanrawsrev %>%
 cleanrawsrev <- cleanrawsrev %>% mutate(time = as.numeric(time)) %>% 
   mutate(time = round(time, digits = 0)) 
 
+##Selecting relevant groups
+
+cleanrawsrev <- cleanrawsrev %>% 
+  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
+
 ##Ordering the genotype factor for plotting
     
 cleanrawsrev$genotype <- factor(cleanrawsrev$genotype,
-    levels = c("N2_NGM", "N2_A25", "N2_A1", "N2_K25", "N2_K1", "PD1074_NGM", "PD1074_A25", "PD1074_A1", "PD1074_K25", "PD1074_K1"), ordered = TRUE)
+    levels = c("PD1074_NGM", "PD1074_A25", "PD1074_A1"), ordered = TRUE)
 
 ##Calculate reversal probability
 
@@ -480,7 +357,7 @@ mean_cleanrawsrev <- cleanrawsrev %>%
 
 ##Add stim number NOTE: this must be changed to fit your experiment parameters 
 
-mean_cleanrawsrev$stimulus_num <- rep(1:31, times = 10) 
+mean_cleanrawsrev$stimulus_num <- rep(1:31, times = 3) 
 
 ##SD calcs
 
@@ -516,7 +393,7 @@ speed_SEM <- cleanrawsrev %>%
 
 
 ```{r}
-##Plots of mean reversal probability for PD1074 wild-type controls vs pbs-1 heterozygotes.
+##Plots of mean reversal probability for PD1074 wild-type.
 
 mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
   filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
@@ -541,32 +418,6 @@ ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_prob, colour = genotype)) +
   theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
   theme(legend.position="none") +
   ggsave("PD1074_wildtype_auxin_groups_prob.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
-
-#Plot of N2 prob
-
-mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
-prob_SEM_filt <- prob_SEM %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
-ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_prob, colour = genotype)) +
-  theme_classic() + 
-  geom_line(size = 0.4) + 
-  geom_errorbar(aes(ymin=rev_prob-prob_SEM_filt$prob_sem, ymax=rev_prob+prob_SEM_filt$prob_sem), width = 0, size = 0.4) +
-  scale_y_continuous(expand = c(0,0),
-                     limits = c(0,1.00), breaks = c(0,0.5,1.0)) +
-  scale_x_continuous(expand = c(0,0),
-                     limits = c(0,32), breaks = c(0,31)) +
-  geom_point(size = 0.8) +
-  scale_color_manual(values=c("gray39", "#f4b5f7", "#ff40fd")) +
-  labs(title = "", x = "Stimulus number", y = "Reversal probability") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) +
-  theme(axis.ticks = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length= unit(.03, "in")) +
-  theme(axis.text = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(legend.position="none") +
-  ggsave("N2_wildtype_auxin_groups_prob.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
 
 #Plot of duration habituation PD1074 
   
@@ -594,32 +445,6 @@ ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_dur, colour = genotype)) +
   theme(legend.position="none") +
   ggsave("PD1074_wildtype_auxin_graphs_dur.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
 
-##Plot of duration habituation for N2
-
-mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
-dur_SEM_filt <- dur_SEM %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
-ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_dur, colour = genotype)) +
-  theme_classic() + 
-  geom_line(size = 0.4) + 
-  geom_errorbar(aes(ymin=rev_dur-dur_SEM_filt$dur_sem, ymax=rev_dur+dur_SEM_filt$dur_sem), width = 0, size = 0.4) +
-  scale_y_continuous(expand = c(0,0),
-                     limits = c(0,3.00), breaks = c(0,1.0,2.0,3.0)) +
-  scale_x_continuous(expand = c(0,0),
-                     limits = c(0,32), breaks = c(0,31)) +
-  geom_point(size = 0.8) +
-  scale_color_manual(values=c("gray39", "#f4b5f7", "#ff40fd")) +
-  labs(title = "", x = "Stimulus number", y = "Reversal duration") +
-  theme(axis.line = element_line(colour = 'black', size = 0.4)) +
-  theme(axis.ticks = element_line(colour = "black", size = 0.4)) +
-  theme(axis.ticks.length= unit(.03, "in")) +
-  theme(axis.text = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
-  theme(legend.position="none") +
-  ggsave("N2_wildtype_auxin_graphs_dur.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
-
 ##Plot of PD1074 speed habituation
 
 mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
@@ -646,12 +471,492 @@ ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_speed, colour = genotype)) 
   theme(legend.position="none") +
   ggsave("PD1074_wildtype_auxin_graphs_speed.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
 
+##Remove ordering from genotype factor before statistical analysis. 
+
+cleanrawsrev$genotype <- factor(cleanrawsrev$genotype,
+    levels = c("PD1074_NGM", "PD1074_A25", "PD1074_A1"), ordered = FALSE)
+
+##Calculate the final probability of responding after habituation training for statistical comparisons. 
+
+Final_rev_prob <- cleanrawsrev %>%
+  group_by(genotype, plate_id) %>%
+  filter(time %in% c(870:890)) %>% 
+  summarize(final_rev_prob = mean(rev_prob))
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+Final_rev_prob_filt <- Final_rev_prob %>% 
+  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
+
+fit <- summary(lm(final_rev_prob~genotype, Final_rev_prob_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Calculate the final duration of responses after habituation training for statistical comparisons. 
+
+Final_rev_dur <- cleanrawsrev %>%
+  group_by(genotype, plate_id) %>%
+  filter(time %in% c(870:890)) %>% 
+  summarize(final_rev_dur = mean(rev_dur))
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+Final_rev_dur_filt <- Final_rev_dur %>% 
+  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
+
+fit <- summary(lm(final_rev_dur~genotype, Final_rev_dur_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Calculate the final speed of responses after habituation training for statistical comparisons. 
+
+Final_rev_speed <- cleanrawsrev %>%
+  group_by(genotype, plate_id) %>%
+  filter(time %in% c(870:890)) %>% 
+  summarize(final_rev_speed = mean(rev_speed))
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+Final_rev_speed_filt <- Final_rev_speed %>% 
+  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1"))
+
+fit <- summary(lm(final_rev_speed~genotype, Final_rev_speed_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+```
+
+
+
+```{r}
+
+#This section covers the Multi-Worm Tracker analysis of the Auxin treated Rankin lab N2 WT strain. 
+
+##Bash loop to output reversals and basic morphology from tracker plates (to be run in terminal)
+
+for folder in $( ls ); do java -jar /Users/troymcdiarmid/Desktop/Chore.jar --segment --shadowless --pixelsize 0.027 --minimum-move-body 2 --minimum-time 20 --output width,length,morphwidth,curve,area,midline,pathlen,bias,dir,angular,aspect,kink,crab,speed --plugin Reoutline::despike --plugin Respine --plugin MeasureReversal::tap::dt=1::collect=0.5 $folder; done
+
+##Bash argument to grep all .dat files into a summary of morphology (to be run in terminal)
+
+grep -H '[.]*' $(find . -name '*.dat') > data.smorph
+
+cd ../..
+
+```
+
+
+
+
+```{r}
+
+##The following code creates a dataframe with all morphology and baseline locomotion measures throughout the tracking session.
+
+##Comand to read .smorph file in 
+
+setwd("/Volumes/SAMWISE/Troy/N2_0.025mM_1mM_0923_2020/data")
+
+rawsmorph <- read_table2("data.smorph", col_names = c("plate_id", "width", "length", "morphwidth", "curve", "area", "midline", "pathlen", "bias", "dir", "angular", "aspect", "kink", "crab", "speed"))
+
+cleanrawsmorph <- rawsmorph %>% 
+  separate(plate_id, into = c("garbage", "plate_id", "genotype"), sep ="/") %>%
+  separate(genotype, into = c("genotype", "time"), sep = ":") %>% separate(genotype, into = c("genotype", "synch_conditions", "growth_conditions"), sep = "_") 
+
+cleanrawsmorph$genotype <- recode(cleanrawsmorph$genotype, `N2N` = "N2")
+
+####Make time numeric and round time
+
+cleanrawsmorph <- cleanrawsmorph %>% mutate(time = as.numeric(time)) %>% 
+  mutate(time = round(time, digits = 0)) 
+
+##Ordering the genotype factor for plotting
+    
+cleanrawsmorph$genotype <- factor(cleanrawsmorph$genotype,
+    levels = c("N2", "N2A25", "N2A1"), ordered = TRUE)
+
+##Filtering to exclude first 10s when the tracker has yet to calculate conistent measurements for certain metrics.
+
+cleanrawsmorph <- cleanrawsmorph %>% 
+  filter(between(cleanrawsmorph$time, 10, 1199))
+
+##Code to remove all 0 measurement entries and focus on the baseline period (300-599 seconds) which occurs after the worms have acclimated to the tracker but prior to the delivery of mechanosensory stimuli 
+
+cleanrawsmorph_baseline <- cleanrawsmorph %>% 
+  filter(between(cleanrawsmorph$time, 300, 599))
+
+```
+
+
+```{r}
+##Code to calculate mean of morphology metrics
+
+mean_cleanrawsmorph <- cleanrawsmorph_baseline %>% 
+  dplyr::select(genotype, plate_id, width:speed) 
+
+mean_cleanrawsmorph <- mean_cleanrawsmorph %>%  
+  group_by(genotype, plate_id) %>%
+  summarize_all(mean) 
+
+mean_cleanrawsmorph_filt <- mean_cleanrawsmorph %>% 
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
+
+
+```
+
+
+```{r}
+
+##Plot of N2 length
+
+ggplot(mean_cleanrawsmorph_filt, aes(genotype, length, fill = genotype)) +
+  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
+  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
+  dodge.width = 0.65, seed = 3), size = 0.2) +
+  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,1.25), breaks = c(0,.25,.50,0.75,1.00,1.25)) +
+  theme_classic() +
+  labs(y = "Length (mm)", x = "") +
+  theme(legend.title= element_text(family="Arial Bold")) +
+  theme(legend.position = "none") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
+  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length=unit(.03, "in")) +
+  theme(axis.ticks.x = element_line(size = 0)) +
+  theme(axis.text = element_text(family="Arial", colour = "black")) +
+  theme(axis.text.x = element_text(size = 0)) +
+  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
+ggsave("Auxin_wildtype_baseline_N2_length.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
+
+
+#Plots of width for N2 
+
+ggplot(mean_cleanrawsmorph_filt, aes(genotype, width, fill = genotype)) +
+  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
+  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
+  dodge.width = 0.65, seed = 3), size = 0.3) +
+  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,0.5), breaks = c(0,.25,.50)) +
+  theme_classic() +
+  labs(y = "Width (mm)", x = "") +
+  theme(legend.title= element_text(family="Arial Bold")) +
+  theme(legend.position = "none") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
+  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length=unit(.03, "in")) +
+  theme(axis.ticks.x = element_line(size = 0)) +
+  theme(axis.text = element_text(family="Arial", colour = "black")) +
+  theme(axis.text.x = element_text(size = 0)) +
+  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
+ggsave("Auxin_wildtype_baseline_N2_width.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
+
+
+#Plot of kink for N2 
+
+ggplot(mean_cleanrawsmorph_filt, aes(genotype, kink, fill = genotype)) +
+  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
+  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
+  dodge.width = 0.65, seed = 3), size = 0.3) +
+  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
+    scale_y_continuous(expand = c(0,0),
+                     limits = c(0, 75), breaks = c(0,25,50,75)) +
+  theme_classic() +
+  labs(y = "Kink (radians)", x = "") +
+  theme(legend.title= element_text(family="Arial Bold")) +
+  theme(legend.position = "none") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
+  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length=unit(.03, "in")) +
+  theme(axis.ticks.x = element_line(size = 0)) +
+  theme(axis.text = element_text(family="Arial", colour = "black")) +
+  theme(axis.text.x = element_text(size = 0)) +
+  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
+ggsave("Auxin_wildtype_baseline_N2_kink.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
+
+
+##Plot of speed for N2
+
+ggplot(mean_cleanrawsmorph_filt, aes(genotype, speed, fill = genotype)) +
+  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
+  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
+  dodge.width = 0.65, seed = 3), size = 0.3) +
+  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
+    scale_y_continuous(expand = c(0,0),
+                     limits = c(0, 0.15), breaks = c(0,0.05,0.1,0.15)) +
+  theme_classic() +
+  labs(y = "Speed (mm/s)", x = "") +
+  theme(legend.title= element_text(family="Arial Bold")) +
+  theme(legend.position = "none") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
+  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length=unit(.03, "in")) +
+  theme(axis.ticks.x = element_line(size = 0)) +
+  theme(axis.text = element_text(family="Arial", colour = "black")) +
+  theme(axis.text.x = element_text(size = 0)) +
+  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
+ggsave("Auxin_wildtype_baseline_N2_speed.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
+
+##Plot of bias for N2
+
+ggplot(mean_cleanrawsmorph_filt, aes(genotype, bias, fill = genotype)) +
+  geom_violin(position = position_dodge(width = 0.65), trim = FALSE, size = 0.4) +
+  geom_point(position = position_jitterdodge(jitter.width = 0, jitter.height = 0.0,
+  dodge.width = 0.65, seed = 3), size = 0.3) +
+  scale_fill_manual(values = c("gray39", "#f4b5f7", "#ff40fd")) +
+    scale_y_continuous(expand = c(0,0),
+                     limits = c(-0.25, 0.75), breaks = c(-0.25,0.0,0.25,0.5,0.75)) +
+  theme_classic() +
+  labs(y = "Bias", x = "") +
+  theme(legend.title= element_text(family="Arial Bold")) +
+  theme(legend.position = "none") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) + 
+  theme(axis.ticks.y = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length=unit(.03, "in")) +
+  theme(axis.ticks.x = element_line(size = 0)) +
+  theme(axis.text = element_text(family="Arial", colour = "black")) +
+  theme(axis.text.x = element_text(size = 0)) +
+  theme(axis.text.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 0)) +
+ggsave("Auxin_wildtype_baseline_N2_bias.jpeg", width = 2.1, height = 2.3, path = "/Users/troymcdiarmid/Desktop/")
+
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+mean_cleanrawsmorph_filt$genotype <- factor(mean_cleanrawsmorph_filt$genotype,
+    levels = c("N2", "N2A25", "N2A1"), ordered = FALSE)
+
+fit <- summary(lm(length~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(width~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(kink ~ genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(speed ~ genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
+
+fit <- summary(lm(bias~genotype, mean_cleanrawsmorph_filt))
+
+tidy_fit <- tidy(fit)  
+
+qvals <- p.adjust(tidy_fit$p.value, "BH")
+
+tidy_fit$q.vals <- qvals
+
+```
+
+
+```{r}
+#The following code chunks import and analyze tap reversal response habituation learning behavior from MWT output files. 
+
+##Bash loop to call choreography to output reversals from each tracker plate data file generated by the tracker
+
+for folder in $( ls ); do java -jar /Users/troymcdiarmid/Desktop/Chore.jar --segment --shadowless --pixelsize 0.027 --minimum-move-body 2 --minimum-time 20 --output speed,midline,morphwidth --plugin Reoutline::despike --plugin Respine --plugin MeasureReversal::tap::dt=1::collect=0.5  $folder; done
+
+##Bash argument to grep all .trv choreography output files into a summary of reversals
+
+grep -H '[.]*' $(find . -name '*.rev') > data.srev
+cd ../..
+
+```
+
+
+```{r}
+##Read in summary of reversal data file (data.srev) 
+
+setwd("/Volumes/SAMWISE/Troy/N2_0.025mM_1mM_0923_2020/data")
+cleanrawsrev <- read_table2("data.srev", col_names = c("plate_id", "already_rev", "not_rev", "rev", "rev_dist", "dist_sd", "dist_sem", "dist_0_quart", "dist_1st_quart", "dist_2nd_quart", "dist_3rd_quart", "dsit_100th_percentile", "rev_dur", "dur_sd", "dur_sem", "dur_0_quart", "dur_1st_quart", "dur_2nd_quart", "dur_3rd_quart", "dur_100th_percentile"))
+cleanrawsrev <- cleanrawsrev %>% 
+  separate(plate_id, into = c("garbage", "plate_id", "genotype"), sep ="/") %>%
+  separate(genotype, into = c("genotype", "time"), sep = ":") %>% 
+  separate(genotype, into = c("genotype", "synch_conditions", "growth_conditions"), sep = "_") 
+
+##Recoding genotype
+
+cleanrawsrev$genotype <- recode(cleanrawsrev$genotype, `N2N` = "N2")
+
+####Make time numeric and round time
+
+cleanrawsrev <- cleanrawsrev %>% mutate(time = as.numeric(time)) %>% 
+  mutate(time = round(time, digits = 0)) 
+
+##Ordering the genotype factor for plotting
+    
+cleanrawsrev$genotype <- factor(cleanrawsrev$genotype,
+    levels = c("N2", "N2A25", "N2A1"), ordered = TRUE)
+
+##Calculate reversal probability
+
+cleanrawsrev <- cleanrawsrev %>% 
+  mutate(rev_prob = rev / (not_rev + rev)) 
+
+##optional code to remove any bad observtions
+
+cleanrawsrev <- cleanrawsrev %>% 
+  filter(!(rev_dist == "0")) 
+cleanrawsrev <- cleanrawsrev %>% 
+  filter(!(time == "659")) 
+
+##Calculate reversal speed 
+
+cleanrawsrev <- cleanrawsrev %>%
+  mutate(rev_speed = rev_dist / rev_dur) 
+
+##Mean rev data
+
+mean_cleanrawsrev <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarize_all(mean) 
+
+##Add stim number NOTE: this must be changed to fit your experiment parameters 
+
+mean_cleanrawsrev$stimulus_num <- rep(1:31, times = 3) 
+
+##SD calcs
+
+prob_SD <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(prob_sd = sd(rev_prob))
+dur_SD <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(dur_sd = sd(rev_dur))
+speed_SD <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(speed_sd = sd(rev_speed))
+dist_SD <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(dist_sd = sd(rev_dist))
+
+##SEM calcs
+
+prob_SEM <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(prob_sem = sd(rev_prob)/sqrt(length(rev_prob)))
+dur_SEM <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(dur_sem = sd(rev_dur)/sqrt(length(rev_dur)))
+dist_SEM <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(dist_sem = sd(rev_dist)/sqrt(length(rev_dist)))
+speed_SEM <- cleanrawsrev %>% 
+  group_by(genotype, time) %>% 
+  summarise(speed_sem = sd(rev_speed)/sqrt(length(rev_speed)))
+
+```
+
+
+```{r}
+##Plots of mean reversal probability for N2 Wild-type controls
+
+#Plot of N2 prob
+
+mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
+prob_SEM_filt <- prob_SEM %>% 
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
+ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_prob, colour = genotype)) +
+  theme_classic() + 
+  geom_line(size = 0.4) + 
+  geom_errorbar(aes(ymin=rev_prob-prob_SEM_filt$prob_sem, ymax=rev_prob+prob_SEM_filt$prob_sem), width = 0, size = 0.4) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,1.00), breaks = c(0,0.5,1.0)) +
+  scale_x_continuous(expand = c(0,0),
+                     limits = c(0,32), breaks = c(0,31)) +
+  geom_point(size = 0.8) +
+  scale_color_manual(values=c("gray39", "#f4b5f7", "#ff40fd")) +
+  labs(title = "", x = "Stimulus number", y = "Reversal probability") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) +
+  theme(axis.ticks = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length= unit(.03, "in")) +
+  theme(axis.text = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(legend.position="none") +
+  ggsave("N2_wildtype_auxin_groups_prob.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
+
+##Plot of duration habituation for N2
+
+mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
+dur_SEM_filt <- dur_SEM %>% 
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
+ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_dur, colour = genotype)) +
+  theme_classic() + 
+  geom_line(size = 0.4) + 
+  geom_errorbar(aes(ymin=rev_dur-dur_SEM_filt$dur_sem, ymax=rev_dur+dur_SEM_filt$dur_sem), width = 0, size = 0.4) +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0,3.00), breaks = c(0,1.0,2.0,3.0)) +
+  scale_x_continuous(expand = c(0,0),
+                     limits = c(0,32), breaks = c(0,31)) +
+  geom_point(size = 0.8) +
+  scale_color_manual(values=c("gray39", "#f4b5f7", "#ff40fd")) +
+  labs(title = "", x = "Stimulus number", y = "Reversal duration") +
+  theme(axis.line = element_line(colour = 'black', size = 0.4)) +
+  theme(axis.ticks = element_line(colour = "black", size = 0.4)) +
+  theme(axis.ticks.length= unit(.03, "in")) +
+  theme(axis.text = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.x = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(axis.title.y = element_text(family="Arial", colour = "black", size = 12)) +
+  theme(legend.position="none") +
+  ggsave("N2_wildtype_auxin_graphs_dur.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
+
 #Plot of N2 speed habituation
 
 mean_cleanrawsrev_filt <- mean_cleanrawsrev %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
 speed_SEM_filt <- speed_SEM %>% 
-  filter(genotype %in% c("N2_NGM", "N2_A25", "N2_A1"))
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
 ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_speed, colour = genotype)) +
   theme_classic() + 
   geom_line(size = 0.4) + 
@@ -672,6 +977,11 @@ ggplot(mean_cleanrawsrev_filt, aes(stimulus_num, rev_speed, colour = genotype)) 
   theme(legend.position="none") +
   ggsave("N2_wildtype_auxin_graphs_speed.jpeg", width = 2.3, height = 2.2, path = "/Users/troymcdiarmid/Desktop/")
 
+##Remove ordering from genotype factor before statistical analysis. 
+
+cleanrawsrev$genotype <- factor(cleanrawsrev$genotype,
+    levels = c("N2", "N2A25", "N2A1"), ordered = FALSE)
+
 ##Calculate the final probability of responding after habituation training for statistical comparisons. 
 
 Final_rev_prob <- cleanrawsrev %>%
@@ -682,7 +992,7 @@ Final_rev_prob <- cleanrawsrev %>%
 ##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
 
 Final_rev_prob_filt <- Final_rev_prob %>% 
-  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1", "N2_NGM", "N2_A25", "N2_A1"))
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
 
 fit <- summary(lm(final_rev_prob~genotype, Final_rev_prob_filt))
 
@@ -702,7 +1012,7 @@ Final_rev_dur <- cleanrawsrev %>%
 ##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
 
 Final_rev_dur_filt <- Final_rev_dur %>% 
-  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1", "N2_NGM", "N2_A25", "N2_A1"))
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
 
 fit <- summary(lm(final_rev_dur~genotype, Final_rev_dur_filt))
 
@@ -722,7 +1032,7 @@ Final_rev_speed <- cleanrawsrev %>%
 ##Fit a linear model and estimate signficance of group differences with adjusted p-values. 
 
 Final_rev_speed_filt <- Final_rev_speed %>% 
-  filter(genotype %in% c("PD1074_NGM", "PD1074_A25", "PD1074_A1", "N2_NGM", "N2_A25", "N2_A1"))
+  filter(genotype %in% c("N2", "N2A25", "N2A1"))
 
 fit <- summary(lm(final_rev_speed~genotype, Final_rev_speed_filt))
 
@@ -733,9 +1043,3 @@ qvals <- p.adjust(tidy_fit$p.value, "BH")
 tidy_fit$q.vals <- qvals
 
 ```
-
-
-
-
-
-
